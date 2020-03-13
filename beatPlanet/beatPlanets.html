@@ -1,0 +1,458 @@
+<!doctype html> 
+<html lang="en"> 
+<head> 
+    <meta charset="UTF-8" />
+    <title>Beat Planets</title>
+    <!-- <script src="js/pako.min.js"></script> -->
+    <script src="phaser.min.js"></script>
+    <!-- plugin for debug -->
+    <!-- <script src="phaser-plugin-debug-draw.umd.js"></script>  -->
+    <!-- <script>
+        var phaserUrl = 'https://test-b-fat.pingan.com.cn/mkt/youhui/1901/dtwxqx-ht/js/phaser.min.js.gz'
+
+        var xhr = new XMLHttpRequest();
+        xhr.responseType = 'arraybuffer'
+        xhr.onload = function () {
+            console.log('Data got.')
+            var data = new Uint8Array(xhr.response, 0)
+            var res = pako.inflate(data, {to: 'string'})
+            var phaserjs = document.createElement('script')
+            var head = document.head
+            phaserjs.type = 'text/javascript';
+            phaserjs.innerHTML = res
+            head.appendChild(phaserjs)
+
+            init()
+        }
+        xhr.open('get', phaserUrl, true);
+        xhr.send();
+    </script> -->
+    <style type="text/css">
+        * {
+            margin: 0;
+            padding: 0;
+            overflow: hidden;
+        }
+    </style>
+</head>
+<body>
+
+<script type="text/javascript">
+
+const WIDTH_SCENE = 750 // window.innerWidth
+const HEIGHT_SCENE = 1624 // window.innerHeight
+
+const ORIGINAL_STATUS = 0
+const CHANGED_STATUS = 1
+const END_STATUS = 2
+
+const PLANET_SIZE = 114
+const LARGE_SIZE = 1
+const MEDIUM_SIZE = 0.7
+const SMALL_SIZE = 0.3
+
+const FIREPOWER_AWARD = 5
+
+
+let cursors = null
+let bulletEmitter = null
+let planet = null
+let gameOver = false
+let game = null
+
+let firepower = 5
+
+// function init () {
+    var config = {
+        type: Phaser.AUTO,
+        scale: {
+            mode: Phaser.Scale.ENVELOP, // FIT
+            width: WIDTH_SCENE,
+            height: HEIGHT_SCENE,
+        },
+        physics: {
+            default: 'arcade',
+            arcade: {
+                gravity: { y: 300 },
+                debug: false
+            }
+        },
+        // plugins: {
+        //     scene: [{ key: 'DebugDrawPlugin', plugin: PhaserDebugDrawPlugin, mapping: 'debugDraw' }]
+        //   },
+        scene: {
+            preload: preload,
+            create: create,
+            update: update
+        }
+    };
+    game = new Phaser.Game(config)
+// }
+
+function preload () {
+    this.load.image('background', 'assets/start_bg.jpg');
+    this.load.image('ground', 'assets/ground_real.png');
+    this.load.image('cannon', 'assets/cannon.png');
+    this.load.image('bullet', 'assets/bullet.png');
+    this.load.image('smoke', 'assets/smoke.png');
+    this.load.image('green', 'assets/green_ball.png');
+    this.load.image('yellow', 'assets/yellow_ball.png');
+    this.load.image('purple', 'assets/purple_ball.png');
+    this.load.image('star', 'assets/star.png');
+    this.load.image('fire1', 'assets/fire1.png');
+    this.load.image('fire2', 'assets/fire2.png');
+
+    this.BPDATA = {}
+
+    this.BPDATA.planet_texture = ['green', 'yellow', 'purple']
+    this.BPDATA.fire_texture = ['fire1', 'fire2']
+}
+
+function create () {
+    this.add.image(WIDTH_SCENE / 2, HEIGHT_SCENE / 2, 'background')
+
+    this.BPDATA.ground = this.physics.add.staticGroup();
+    this.BPDATA.ground.create(WIDTH_SCENE / 2, 1020, 'ground');
+
+    this.BPDATA.cannon = new Cannon(this)
+
+    // Keyboard Input Events
+    cursors = this.input.keyboard.createCursorKeys()
+
+    // score
+    this.BPDATA.score = new Score(this)
+    this.BPDATA.firepower = new FirePower(this)
+
+    // planets 
+    this.BPDATA.planets = []
+    this.BPDATA.planets.push(new Planet(this))
+}
+
+function update () {
+
+    if (gameOver) return;
+
+    if (cursors.left.isDown) {
+        this.BPDATA.cannon.object.setVelocityX(-260);
+    }
+    else if (cursors.right.isDown) {
+        this.BPDATA.cannon.object.setVelocityX(260);
+    }
+    else {
+        this.BPDATA.cannon.object.setVelocityX(0);
+    }
+
+    // pointer control
+    this.input.on('pointermove', function (pointer) {
+        if (gameOver) return
+        if (pointer.isDown) {
+            this.BPDATA.cannon.object.x = pointer.x
+        }
+    }, this);
+
+    this.BPDATA.cannon.smoke.x = this.BPDATA.cannon.object.x;
+    this.BPDATA.cannon.smoke.y = this.BPDATA.cannon.object.y - 70;
+    this.BPDATA.cannon.smoke.visible = !this.BPDATA.cannon.smoke.visible
+
+    if (this.BPDATA.planets.length === 0) {
+        this.BPDATA.planets.push(new Planet(this, Phaser.Math.Between(100, 500)))
+    }
+
+    this.BPDATA.planets.forEach(p => p.updateScore())
+}
+
+
+class Planet {
+    constructor (
+        game, 
+        posX = 200, 
+        posY = 200, 
+        vX = 100, 
+        vY = 0, 
+        size = LARGE_SIZE) {
+        this.game = game
+        this.status = ORIGINAL_STATUS
+        this.textureIdx = Phaser.Math.Between(0, this.game.BPDATA.planet_texture.length - 1)
+
+        let texture = this.game.BPDATA.planet_texture[this.textureIdx]
+
+        this.object = this.game.physics.add.image(posX, posY, texture)
+            .setVelocityX(vX)
+            .setVelocityY(vY)
+        this.size = size
+        this.score = Phaser.Math.Between(1, this.game.BPDATA.firepower.value * 50)
+        this.scoreText = this.game.add.text(
+            this.object.x, 
+            this.object.y, 
+            this.score, 
+            { 
+                fontSize: '24px', 
+                fill: '#fff' 
+            })
+        this.scoreText.setOrigin(0.5);
+        this.object.setScale(size)
+        this.object.setCircle(PLANET_SIZE) // empty parameter wont work
+        // this.object.setCircle(PLANET_SIZE * size) // this will make physic body smaller than image
+        this.object.setBounce(1)
+        this.object.setCollideWorldBounds(true)
+
+        this.game.physics.add.collider(this.object, this.game.BPDATA.ground, this.hitGround, null, this)
+        this.game.physics.add.overlap(this.game.BPDATA.cannon.object, this.object, this.hitCannon, null, this);
+    }
+    updateScore () {
+        this.scoreText.setText(this.score)
+        this.scoreText.x = this.object.x
+        this.scoreText.y = this.object.y
+    }
+    hit () {
+        if (this.status === END_STATUS) {
+            this.split()
+            new SplitStar(this.game, 'star', this.object.x, this.object.y)
+        } else {
+            let nextIdx = (this.textureIdx + 1) % this.game.BPDATA.planet_texture.length
+            this.textureIdx = nextIdx
+            this.object.setTexture(this.game.BPDATA.planet_texture[nextIdx])
+            this.status = CHANGED_STATUS
+            let firepower = this.game.BPDATA.firepower.value
+            if (this.score >= firepower) {
+                this.score -= firepower
+                this.game.BPDATA.score.update(firepower)
+            } else {
+                this.game.BPDATA.score.update(this.score)
+                this.status = END_STATUS
+            }
+        }
+    }
+    split () {
+        let posX = this.object.x
+        let posY = this.object.y
+
+        let vX = this.object.body.velocity.x
+        let vY = -Math.abs(this.object.body.velocity.y)
+
+        let delIndex = this.game.BPDATA.planets.indexOf(this);
+        if (delIndex !== -1) {
+            this.game.BPDATA.planets.splice(delIndex, 1)
+        }
+
+        this.object.destroy()
+        this.scoreText.destroy()
+        new Award(this.game, this.object.x, this.object.y)
+
+        let spawnSize = LARGE_SIZE
+        if (this.size === LARGE_SIZE) {
+            spawnSize = MEDIUM_SIZE
+        } else if (this.size === MEDIUM_SIZE) {
+            spawnSize = SMALL_SIZE
+        } else {
+            return
+        }
+
+        this.game.BPDATA.planets.push(new Planet(
+            this.game, 
+            posX, 
+            posY, 
+            vX + Phaser.Math.Between(-2, 2) * 20, 
+            vY, 
+            spawnSize))
+        this.game.BPDATA.planets.push(new Planet(
+            this.game, 
+            posX, 
+            posY, 
+            vX + Phaser.Math.Between(-2, 2) * 20, 
+            vY, 
+            spawnSize))
+    }
+    hitGround () {
+        if (this.size === LARGE_SIZE) {
+           this.game.cameras.main.shake(200, 0.02); 
+        }
+    }
+    hitCannon () {
+        this.game.BPDATA.cannon.bulletEmitter.stop()
+        this.game.physics.pause()
+        gameOver = true
+    }
+}
+
+class SplitStar {
+    constructor (game, imgKey, posX, posY) {
+        this.game = game
+        this.particles = this.game.add.particles(imgKey)
+
+        this.object = this.particles.createEmitter({
+            x: posX,
+            y: posY,
+            angle: { min: 45, max: 135 },
+            alpha: { start: 0.5, end: 0 },
+            speed: 120,
+            gravityY: 100,
+            lifespan: 1800,
+            quantity: 1,
+            scale: 0.3,
+            frequency: 80,
+            blendMode: 'NORMAL'
+        });
+
+        this.game.time.delayedCall(200, this.stop, null, this)
+        this.game.time.delayedCall(1000, this.destroy, null, this)
+    }
+    stop () {
+        this.object.stop()
+    }
+    destroy () {
+        this.particles.destroy()
+    }
+}
+
+class Award {
+    constructor (game, posX, posY) {
+        this.game = game
+        this.fireAward = FIREPOWER_AWARD
+        let texture = this.game.BPDATA.fire_texture[Phaser.Math.Between(0, 1)]
+        this.object = this.game.physics.add.image(posX, posY, texture)
+        this.object.setCollideWorldBounds(true)
+        this.object.setBounce(0.5)
+        this.object.setGravityY(400)
+
+        this.game.physics.add.collider(this.object, this.game.BPDATA.ground)
+        this.game.physics.add.overlap(this.object, this.game.BPDATA.cannon.object, this.got, null, this)
+
+        this.game.time.delayedCall(5000, this.destroy, null, this)
+    }
+    got () {
+        this.game.BPDATA.firepower.update(this.fireAward)
+        this.object.destroy()
+    }
+    destroy () {
+        this.object.destroy()
+    }
+}
+
+class Cannon {
+    constructor (game) {
+        this.game = game
+        this.object = this.game.physics.add.image(WIDTH_SCENE / 2 + 200, 940, 'cannon')
+        this.object.setSize(67, 130)
+        this.object.setCollideWorldBounds(true)
+        this.game.physics.add.collider(this.object, this.game.BPDATA.ground)
+
+        this.createBullets()
+        this.createSmoke()
+    }
+    createBullets () {
+        this.bulletParticles = this.game.add.particles('bullet')
+
+        // this.bulletEmitter = this.bulletParticles.createEmitter({
+        //     // x: WIDTH_SCENE / 2,
+        //     // y: HEIGHT_SCENE / 2,
+        //     x: 0,
+        //     y: -70,
+        //     angle: { min: -85, max: -95 },
+        //     speed: 800,
+        //     gravityY: 1000,
+        //     lifespan: 4000,
+        //     quantity: 1,
+        //     // scale: { start: 0.1, end: 1 },
+        //     blendMode: 'NORMAL', // 'ADD'
+        //     follow: this.object
+        // });
+        var self = this
+        var bulletDeath = {
+            contains: function (x, y) {
+                self.game.BPDATA.planets.forEach(p => {
+                    let hit = p.object && p.object.body && p.object.body.hitTest(x, y)
+
+                    if (hit) {
+                        p.hit()
+                    }
+
+                    return hit
+                })
+            }
+        }
+
+        this.bulletEmitter = this.bulletParticles.createEmitter({
+            x: 0,
+            y: -70,
+            angle: -90,
+            speed: 800,
+            gravityY: 10,
+            lifespan: 4000,
+            quantity: 4,
+            scale: 1,
+            frequency: 80,
+            blendMode: 'NORMAL',
+            follow: this.object,
+            deathZone: { type: 'onEnter', source: bulletDeath }
+        });
+        this.bulletEmitter = this.bulletParticles.createEmitter({
+            x: 15,
+            y: -70,
+            angle: -90,
+            speed: 800,
+            gravityY: 10,
+            lifespan: 4000,
+            quantity: 4,
+            scale: 1,
+            frequency: 80,
+            blendMode: 'NORMAL',
+            follow: this.object,
+            // deathZone: { type: 'onEnter', source: bulletDeath }
+        });
+        this.bulletEmitter = this.bulletParticles.createEmitter({
+            x: -15,
+            y: -70,
+            angle: -90,
+            speed: 800,
+            gravityY: 10,
+            lifespan: 4000,
+            quantity: 4,
+            scale: 1,
+            frequency: 80,
+            blendMode: 'NORMAL',
+            follow: this.object,
+            // deathZone: { type: 'onEnter', source: bulletDeath }
+        });
+    }
+    createSmoke () {
+        this.smoke = this.game.make.sprite({
+            x: WIDTH_SCENE / 2,
+            y: 800,
+            key: 'smoke',
+            add: true
+        })
+    }
+}
+
+class Score {
+    constructor (game) {
+        this.game = game
+        this.value = 0
+        this.text = this.game.add.text(16, 16, 
+            '得分: ' + this.value, 
+            { fontSize: '32px', fill: '#fff' })
+    }
+    update (score) {
+        this.value += score
+        this.text.setText('得分: ' + this.value)
+    }
+}
+
+class FirePower {
+    constructor (game) {
+        this.game = game
+        this.value = 5
+        this.text = this.game.add.text(16, 66, 
+            '火力: ' + this.value, 
+            { fontSize: '32px', fill: '#fff' })
+    }
+    update (fire) {
+        this.value += fire
+        this.text.setText('火力: ' + this.value)
+    }
+}
+</script>
+<script src="https://bank-static-stg.pingan.com.cn/app_js/common/vconsole/1.0.0/vconsole.js"></script>
+</body>
+</html>
