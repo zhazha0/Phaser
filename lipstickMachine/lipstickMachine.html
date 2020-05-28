@@ -1,0 +1,178 @@
+<!doctype html> 
+<html lang="en"> 
+<head> 
+    <meta charset="UTF-8" />
+    <title>Lipstick Machine</title>
+    <!-- <script src="js/pako.min.js"></script> -->
+    <script src="phaser.min.js"></script>
+    <!-- plugin for debug -->
+    <!-- <script src="phaser-plugin-debug-draw.umd.js"></script>  -->
+ <!--    <script>
+        var phaserUrl = 'https://test-b-fat.pingan.com.cn/mkt/youhui/1901/dtwxqx-ht/js/phaser.min.js.gz'
+
+        var xhr = new XMLHttpRequest();
+        xhr.responseType = 'arraybuffer'
+        xhr.onload = function () {
+            console.log('Data got.')
+            var data = new Uint8Array(xhr.response, 0)
+            var res = pako.inflate(data, {to: 'string'})
+            var phaserjs = document.createElement('script')
+            var head = document.head
+            phaserjs.type = 'text/javascript';
+            phaserjs.innerHTML = res
+            head.appendChild(phaserjs)
+
+            init()
+        }
+        xhr.open('get', phaserUrl, true);
+        xhr.send();
+    </script> -->
+    <style type="text/css">
+        * {
+            margin: 0;
+            padding: 0;
+            overflow: hidden;
+        }
+    </style>
+</head>
+<body>
+
+<script type="text/javascript">
+
+const WIDTH_SCENE = 600 // window.innerWidth
+const HEIGHT_SCENE = 800 // window.innerHeight
+
+let game = null
+let gameOver = false
+let roll = null
+let lipstick = null
+
+const HEIGHT_SIZE = 174
+const WIDTH_STICK = 72
+const HEIGHT_STICK = 192
+const ROTATE_SPEED = 1.5
+
+
+// function init () {
+    var config = {
+        type: Phaser.AUTO,
+        scale: {
+            mode: Phaser.Scale.ENVELOP, // ENVELOP, FIT
+            autoCenter: Phaser.Scale.ENVELOP,
+            width: WIDTH_SCENE,
+            height: HEIGHT_SCENE,
+        },
+        physics: {
+            default: 'arcade',
+            arcade: {
+                gravity: { y: 0 },
+                debug: false
+            }
+        },
+        // plugins: {
+        //     scene: [{ key: 'DebugDrawPlugin', plugin: PhaserDebugDrawPlugin, mapping: 'debugDraw' }]
+        //   },
+        scene: {
+            preload: preload,
+            create: create,
+            update: update
+        }
+    };
+    game = new Phaser.Game(config)
+// }
+
+function preload () {
+    this.load.image('roll', 'assets/roll.png');
+    this.load.image('lipstick', 'assets/lipstickS.png');
+
+    this.cameras.main.backgroundColor.setTo(125,125,125);
+}
+
+function create () {
+    this.$$staticGroup = this.physics.add.staticGroup();
+    roll = this.$$staticGroup.create(WIDTH_SCENE / 2, HEIGHT_SCENE / 2 - 200, 'roll')
+    // roll.setScale(1.2)
+    // moving the target on front
+    roll.depth = 1;
+
+    // group to store all rotating sticks
+    this.$$stickGroup = this.physics.add.group();
+
+    lipstick = this.physics.add.image(WIDTH_SCENE / 2, HEIGHT_SCENE - HEIGHT_STICK / 2, 'lipstick')
+
+    this.$$rollCollider = this.physics.add.overlap(roll, lipstick, hitRoll, null, this)
+    this.$$stickCollider = this.physics.add.overlap(lipstick, this.$$stickGroup, hitStick, null, this)
+
+    // pointer control
+    this.input.on('pointerup', function (pointer) {
+        if (gameOver) return
+        castLipstick()
+    }, this);
+}
+
+function update () {
+
+    if (gameOver) return;
+
+
+
+    roll.angle = (roll.angle + ROTATE_SPEED) % 360;
+
+
+    // getting an array with all rotating knives
+    var children = this.$$stickGroup.getChildren();
+
+    // looping through rotating knives
+    for (var i = 0; i < children.length; i++){
+
+        // rotating the knife
+        children[i].angle += ROTATE_SPEED;
+
+        // turning knife angle in radians
+        var radians = Phaser.Math.DegToRad(children[i].angle + 90);
+
+        // trigonometry to make the knife rotate around target center
+        children[i].x = roll.x + (roll.width / 2) * Math.cos(radians);
+        children[i].y = roll.y + (roll.width / 2) * Math.sin(radians);
+    }
+
+}
+
+function castLipstick () {
+    lipstick.body.setVelocityY(-1500)
+}
+
+function hitRoll () {
+    lipstick.body.setVelocityY(0)
+    // destroy current lipstick and roll collider
+    this.$$rollCollider.destroy();
+    this.$$stickCollider.destroy();
+    // lipstick.y -= 10;
+    this.$$stickGroup.add(lipstick);
+
+
+    // create new lipstick
+    lipstick = this.physics.add.image(WIDTH_SCENE / 2, HEIGHT_SCENE - HEIGHT_STICK / 2, 'lipstick')
+    this.$$rollCollider = this.physics.add.overlap(roll, lipstick, hitRoll, null, this)
+    this.$$stickCollider = this.physics.add.overlap(lipstick, this.$$stickGroup, hitStick, null, this)
+}
+
+function hitStick () {
+    console.log('hit stick')
+    lipstick.body.setVelocityY(800)
+    lipstick.body.setVelocityX(80)
+
+    // this.$$rollCollider.destroy();
+
+    // // create new lipstick
+    lipstick = this.physics.add.image(WIDTH_SCENE / 2, HEIGHT_SCENE - HEIGHT_STICK / 2, 'lipstick')
+    this.$$rollCollider = this.physics.add.overlap(roll, lipstick, hitRoll, null, this)
+    this.$$stickCollider = this.physics.add.overlap(lipstick, this.$$stickGroup, hitStick, null, this)
+    // using overlap here is better than collider, or the stick on roll will be affect by stick casted.
+}
+
+</script>
+<!-- <script src="https://bank-static-stg.pingan.com.cn/app_js/common/vconsole/1.0.0/vconsole.js"></script> -->
+</body>
+</html>
+<!-- https://www.emanueleferonato.com/2018/04/18/build-a-html5-game-like-knife-hit-with-phaser-3-using-only-tweens-and-trigonometry-hitting-knives/ -->
