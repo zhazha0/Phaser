@@ -8,8 +8,8 @@ const initGame = () => {
         type: Phaser.AUTO,
         scale: {
             mode: Phaser.Scale.ENVELOP, // ENVELOP, FIT
-            width: cons.WIDTH_SCENE * 2,
-            height: cons.HEIGHT_SCENE * 2
+            width: cons.WIDTH_SCENE,
+            height: cons.HEIGHT_SCENE
         },
         physics: {
             default: 'matter',

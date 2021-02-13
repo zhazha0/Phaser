@@ -1,5 +1,6 @@
 // import Phaser from 'phaser'
 import cons from '../constants'
+import Score from '../objects/score';
 // import Ball from '../objects/ball'
 // class MainScene extends Phaser.Scene {
 class MainScene {
@@ -8,6 +9,7 @@ class MainScene {
 
         // this.game = null
         this.gameOver = false
+        this.score = null
         this.allBalls = {}
     }
 
@@ -25,7 +27,7 @@ class MainScene {
         this.load.image('11', 'assets/11.png');
         this.load.image('11', 'assets/11.png');
 
-        // this.load.image('bar', 'assets/bar.png');
+        this.load.image('bar', 'assets/bar.png');
 
         this.cameras.main.backgroundColor.setTo(232, 135, 30)
     }
@@ -34,10 +36,13 @@ class MainScene {
         this.matter.set60Hz()
         this.matter.world.setBounds(0, 0, this.sys.scale.width, this.sys.scale.height);
 
-        // let bar = this.add.image(cons.WIDTH_SCENE, 200, 'bar')
-        // bar.alpha = 0.2;
+        let bar = this.add.image(cons.SPAWN_X, 200, 'bar')
+        bar.alpha = 0.3;
 
-        let ball = this.matter.add.image(cons.WIDTH_SCENE, 100, '1')
+        this.score = new Score(this)
+
+        // create inital object
+        let ball = this.matter.add.image(cons.SPAWN_X, 100, '1')
         this.allBalls['1'] = this.allBalls['1'] || []
         this.allBalls['1'].push(ball)
         ball.setCircle();
@@ -45,26 +50,30 @@ class MainScene {
         ball.setBounce(0.3);
         ball.body.ignoreGravity = true;
 
-        // create inital object
         // let ball = new Ball(this, cons.WIDTH_SCENE / 2, 100, '1')
         
 
-        // this.physics.add.collider(ball, this.balls, null, null, this);
         // pointer control
         this.input.on('pointerup',  (pointer) => {
             if (this.gameOver) return
 
-            if (ball.body.ignoreGravity === true) {
+            if (ball && ball.body && ball.body.ignoreGravity === true) { // ball can be destroied anytime
                 ball.x = pointer.x
                 ball.body.ignoreGravity = false
-      
-                // this.balls.push(ball)
-                // this.physics.add.collider(this.balls);
+                let nBall = ball
+                ball = null // 没有这个, 点快了可能顶部有两个球
+                
+                this.time.delayedCall(1000, () => {
+                    nBall && (nBall._isAdded = true)
+                    this.score.update(+nBall.texture.key * 10)
+                    nBall = null
+                }, null, this)
+
                 // regenerate new ball
                 this.time.delayedCall(1200, () => {
                     // ball = new Ball(this, cons.WIDTH_SCENE / 2, 100, '1')
                     let texture = Phaser.Math.Between(1, 6)
-                    ball = this.matter.add.image(cons.WIDTH_SCENE, 100, texture)
+                    ball = this.matter.add.image(cons.SPAWN_X, 100, texture)
                     this.allBalls[texture] = this.allBalls[texture] || []
                     this.allBalls[texture].push(ball)
                     // console.clear()
@@ -107,6 +116,16 @@ class MainScene {
                 })
                 
             }
+
+            oneKeyBalls.forEach(ball => {
+                if (ball._isAdded && ((ball.y - ball.height / 2) < 200)) {
+                    this.gameOver = true
+                    this.add.text(cons.WIDTH_SCENE / 2, cons.HEIGHT_SCENE / 2, 
+                        'Game Over', 
+                        { fontSize: '64px', fill: '#fff' }).setOrigin(0.5)
+                    console.log('game over')
+                }
+            })
         })
 
     }
@@ -150,6 +169,8 @@ class MainScene {
             nBall.setCircle();
             nBall.setFriction(0.3);
             nBall.setBounce(0.3);
+            nBall._isAdded = true
+            this.score.update(+nBall.texture.key * 10)
 
             let res = this.matter.intersectBody(nBall.body) || []
             // console.log('check combinded with others', from, to, res)
