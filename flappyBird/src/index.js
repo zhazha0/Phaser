@@ -11,6 +11,8 @@ const initGame = () => {
             width: cons.WIDTH_SCENE,
             height: cons.HEIGHT_SCENE
         },
+        // width: cons.WIDTH_SCENE,
+        // height: cons.HEIGHT_SCENE,
         physics: {
             default: 'arcade',
             arcade: {

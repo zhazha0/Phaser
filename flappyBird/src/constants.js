@@ -1,6 +1,6 @@
 
-const WIDTH_SCENE = window.innerWidth
-const HEIGHT_SCENE = window.innerHeight
+const WIDTH_SCENE = 768 // window.innerWidth
+const HEIGHT_SCENE = 896 // window.innerHeight
 const WIDTH_BACKIMG = 768
 const HEIGHT_BACKIMG = 896
 
