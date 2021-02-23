@@ -1,6 +1,22 @@
 // import Phaser from 'phaser'
 import cons from '../constants'
 import Score from '../objects/score';
+
+// var captionStyle = {
+//     fill: '#7fdbff',
+//     fontFamily: 'monospace',
+//     lineSpacing: 4
+// }
+// var captionTextFormat = (
+//     'Total:    %1\n' +
+//     'Max:      %2\n' +
+//     'Active:   %3\n' +
+//     'Inactive: %4\n' +
+//     'Used:     %5\n' +
+//     'Free:     %6\n' +
+//     'Full:     %7\n'
+// )
+
 // class MainScene extends Phaser.Scene {
 class MainScene {
     constructor () {
@@ -25,6 +41,8 @@ class MainScene {
     }
 
     create () {
+        this.physics.world.setBounds(0, 0, cons.WIDTH_SCENE * 100, cons.HEIGHT_SCENE, true, true, true, true)
+
         // let background = this.add.image(cons.WIDTH_SCENE / 2, cons.HEIGHT_SCENE / 2, 'background')
         this._background = this.add.tileSprite(0, 0, cons.WIDTH_SCENE , cons.HEIGHT_SCENE , 'background', 1)
             .setOrigin(0)
@@ -43,19 +61,19 @@ class MainScene {
         this._bird.setCollideWorldBounds(true)
         this._bird.anims.play('fly', true)
 
-        // this.cameras.main.setBounds(0, 0, cons.WIDTH_SCENE * 500 , cons.HEIGHT_SCENE);
-        // this.cameras.main.startFollow(this._bird);
+        this.cameras.main.setBounds(0, 0, cons.WIDTH_SCENE * 100 , cons.HEIGHT_SCENE);
+        // this.cameras.main.startFollow(this._bird)
+        // this.cameras.main.setLerp(0,0);
 
         // create pipes
         this._pipes = this.physics.add.staticGroup();
-        this._pipes.create(400, cons.HEIGHT_SCENE, 'pipe').setScale(0.5).setOrigin(0.5, 1).refreshBody()
-        let top = this._pipes.create(400, 0, 'pipe').setScale(0.5).setOrigin(0.5, 1).refreshBody()
-        top.angle = 180
+        this.addPipes(this._pipes, 500)
 
         // add physics
-        this.physics.add.collider(this._bird, this._pipes);
+        // this.physics.add.collider(this._bird, this._pipes);
+        this.physics.add.collider(this._bird, this._pipes, this.hitPipes, null, this)
 
-        console.log(this._pipes)
+        // console.log(this._pipes)
         // pointer control
         this.input.on('pointerdown',  (pointer) => {
             if (this.gameOver) return
@@ -65,21 +83,79 @@ class MainScene {
         }, this);
 
 
+        // let { width, height } = this.sys.game.canvas;
+        // console.log('scene size', width, height)
+
+        // this._bird.onWorldBounds = true
+        // this.physics.world.on('worldbounds', function (body) {
+        //     console.log('hello from the edge of the world', body);
+        // }, this)
+
+        // debug information
+        // this._caption = this.add.text(16, 16, '', captionStyle);
+
     }
 
     update () {
         if (this.gameOver) return;
 
-        
+        // this.cameras.main.x = -this._bird.x + 150
         this.cameras.main.scrollX = this._bird.x - 150
-        this._bird.body.velocity.x = 60
+        this._bird.body.velocity.x = 160
         this._background.tilePositionX = this.cameras.main.scrollX;
         // this._background.tilePositionX += 15
 
-        
+        // console.log(this._bird.x, this._bird.displayWidth, this._bird.body.x,
+                    // this._bird.y, this._bird.displayHeight, this._bird.body.y)
+        // console.log(this.cameras.main.scrollX + this.cameras.main.width, this._pipes.children.entries[0].x)
+        // console.log(this._bird.x)
+
+        // this._caption.setText(Phaser.Utils.String.Format(captionTextFormat, [
+        //     this._pipes.children.entries.length
+        // ]))
+        if (this._bird.x + 400 >= this._pipes.children.entries[this._pipes.children.entries.length - 1].x ) {
+            this.addPipes(this._pipes, this._bird.x + 700)
+        }
     }
 
- 
+    hitPipes () {
+        this.gameOver = true
+        
+        this.add.text(this.cameras.main.centerX + this.cameras.main.scrollX - 150, this.cameras.main.centerY, 
+            'Game Over', 
+            { fontSize: '48px', fill: '#fff' }).setOrigin(0.5)
+   
+
+        this.input.on('pointerup',  (pointer) => {
+        
+            this.scene.restart() // restart current scene
+           
+        }, this);
+        this.scene.pause()
+        console.log('game over')
+    }
+
+    addPipes (pipes, posX) {
+        let disMin = 100
+        let disMax = 300
+        let pipeHeightMin = 150
+        let disPipe = Phaser.Math.Between(disMin, disMax) // distance between two pipes
+        let heightTop =  Phaser.Math.Between(pipeHeightMin, cons.HEIGHT_SCENE - disPipe - pipeHeightMin) // height of top pipe
+        let heightBottom = cons.HEIGHT_SCENE - heightTop - disPipe // height of bottom pipe
+
+        // console.log(disPipe, heightTop, heightBottom, cons.HEIGHT_SCENE)
+        pipes.create(posX, cons.HEIGHT_SCENE, 'pipe')
+            .setScale(0.8, heightTop / cons.HEIGHT_PIPE)
+            .setOrigin(0.5, 1)
+            .refreshBody()
+        let top = pipes.create(posX, heightBottom / 2, 'pipe')
+            .setScale(0.8, heightBottom / cons.HEIGHT_PIPE)
+            // .setAngle(10)
+            // .setOrigin(0.5, 0)
+            .refreshBody()
+        top.angle = 180 // rotate image 180
+        // top.refreshBody()
+    }
 
 }
 
