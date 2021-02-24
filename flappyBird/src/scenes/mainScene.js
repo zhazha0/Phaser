@@ -41,7 +41,7 @@ class MainScene {
     }
 
     create () {
-        this.physics.world.setBounds(0, 0, cons.WIDTH_SCENE * 100, cons.HEIGHT_SCENE, true, true, true, true)
+        this.physics.world.setBounds(0, 0, cons.WIDTH_SCENE * 2, cons.HEIGHT_SCENE, true, true, true, true)
 
         // let background = this.add.image(cons.WIDTH_SCENE / 2, cons.HEIGHT_SCENE / 2, 'background')
         this._background = this.add.tileSprite(0, 0, cons.WIDTH_SCENE , cons.HEIGHT_SCENE , 'background', 1)
@@ -61,7 +61,7 @@ class MainScene {
         this._bird.setCollideWorldBounds(true)
         this._bird.anims.play('fly', true)
 
-        this.cameras.main.setBounds(0, 0, cons.WIDTH_SCENE * 100 , cons.HEIGHT_SCENE);
+        this.cameras.main.setBounds(0, 0, cons.WIDTH_SCENE * 2 , cons.HEIGHT_SCENE);
         // this.cameras.main.startFollow(this._bird)
         // this.cameras.main.setLerp(0,0);
 
@@ -79,12 +79,16 @@ class MainScene {
             if (this.gameOver) return
 
             this._bird.body.velocity.y = -200;
+
+            // this._bird.applyForce(0, 22);
+            // this.time.delayedCall(1*1000, 
+            //           () => this._bird.body.setAcceleration(0,0));
            
         }, this);
 
 
         // let { width, height } = this.sys.game.canvas;
-        // console.log('scene size', width, height)
+        // console.log('scene size', width, height) // size in config obj
 
         // this._bird.onWorldBounds = true
         // this.physics.world.on('worldbounds', function (body) {
@@ -116,22 +120,35 @@ class MainScene {
         if (this._bird.x + 400 >= this._pipes.children.entries[this._pipes.children.entries.length - 1].x ) {
             this.addPipes(this._pipes, this._bird.x + 700)
         }
+
+        
+        // expand world and camera view when reach end
+        console.log(this.cameras.main.scrollX + 150, this.physics.world.bounds.width - 200)
+        if (this.cameras.main.scrollX + 150 >= this.physics.world.bounds.width - cons.WIDTH_SCENE) {
+            console.log('reach end')
+            this.physics.world.setBounds(0, 0, this.physics.world.bounds.width + cons.WIDTH_SCENE * 2, cons.HEIGHT_SCENE, true, true, true, true)
+            this.cameras.main.setBounds(0, 0, this.physics.world.bounds.width + cons.WIDTH_SCENE * 2, cons.HEIGHT_SCENE);
+        }
+
     }
 
     hitPipes () {
         this.gameOver = true
         
         this.add.text(this.cameras.main.centerX + this.cameras.main.scrollX - 150, this.cameras.main.centerY, 
-            'Game Over', 
+            'Game Over',
             { fontSize: '48px', fill: '#fff' }).setOrigin(0.5)
-   
+        this.add.text(this.cameras.main.centerX + this.cameras.main.scrollX - 150, this.cameras.main.centerY + 100, 
+            '点击任意处重新开始',
+            { fontSize: '48px', fill: '#fff' }).setOrigin(0.5)
 
         this.input.on('pointerup',  (pointer) => {
         
             this.scene.restart() // restart current scene
-           
+            this.gameOver = false
         }, this);
-        this.scene.pause()
+        this._bird.body.velocity.x = 0
+        this._bird.anims.stop()
         console.log('game over')
     }
 
@@ -156,7 +173,6 @@ class MainScene {
         top.angle = 180 // rotate image 180
         // top.refreshBody()
     }
-
 }
 
 export default MainScene
