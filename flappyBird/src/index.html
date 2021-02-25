@@ -15,7 +15,58 @@
             padding: 0;
             overflow: hidden;
         }
+        .back {
+            display: none;
+            align-items: center;
+            justify-content: center;
+            position: fixed;//背景位置固定100%
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0,0,0,0.5);
+        }
 
+        .pop_content {
+            background:#ffffff;
+            width: 100%;//宽度
+            background: red;
+            z-index: 1;//阴影上层
+            margin: 50% auto;//距离顶部及居中
+            overflow: auto;
+            border-radius: 0.5rem;//圆角边
+        }
+        .dialog_size{
+            height: 5rem;
+        }
+        .confirm{//提示信息样式
+            height: 4rem;
+            text-align: center;//文字左右居中
+            line-height: 4rem;//上下居中
+            font-size: 0.8rem;
+            margin-top: 0.4rem;
+        }
+        .buttons{
+            display: flex;
+            flex-direction: row;
+            align-items: center;
+            justify-content: space-around;
+            margin-top: 15px;
+        }
+        .pop_select{//弹窗选项
+            height: 1.9rem;
+            background: #dc432a;
+            line-height: 1.9rem;
+            text-align: center;
+            color: #fff;
+            width: calc(50% - 1rem);//宽度为50%减去边距
+            font-size: 0.8rem;
+            border-radius: 0.2rem;//圆角
+            margin: 0.5rem;
+        }
+        .cancel{
+            background: #9a9a9a;//取消按钮为灰色
+        }
     </style>
     <!-- <script src="./assets/phaser.min.js"></script> -->
     <script>
@@ -28,7 +79,17 @@
 </head>
 
 <body>
-
+    <div class="back" id="pop">
+        <div class="pop_content">
+            <div class="dialog_size">
+                <div class="confirm">确认是否重新开始？</div>
+                <div class="buttons">
+                    <div class="cancel fl pop_select" id="cancelBt">取消</div>
+                    <div class="sure fl pop_select" id="confirmBt">确定</div>
+                </div>
+            </div>
+        </div>
+    </div>
 </body>
 
 </html>
