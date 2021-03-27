@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <title>吊塔模拟</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no">
+    <meta name="HandheldFriendly" content="True">
+    <meta name="MobileOptimized" content="320">
+    <meta http-equiv="cleartype" content="on">
+    <meta name="format-detection" content="telephone=no">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            overflow: hidden;
+            box-sizing: border-box;
+        }
+
+        html,
+        body {
+            image-rendering: optimizeSpeed;
+            /* Older versions of FF */
+            image-rendering: -moz-crisp-edges;
+            /* FF 6.0+ */
+            image-rendering: -webkit-optimize-contrast;
+            /* Webkit (non standard naming) */
+            image-rendering: -o-crisp-edges;
+            /* OS X & Windows Opera (12.02+) */
+            image-rendering: crisp-edges;
+            /* Possible future browsers. */
+            -ms-interpolation-mode: nearest-neighbor;
+            /* IE (non standard naming) */
+            image-rendering: pixelated;
+            /* Chrome 41 */
+        }
+
+        .control_panel {
+            position: fixed;
+            bottom: 0px;
+            margin: 10px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            flex-wrap: wrap;
+
+        }
+        .control_panel .button {
+            background: black;
+            color: white;
+            width: 80px;
+            height: 40px;
+            line-height: 40px;
+            margin: 5px 5px;
+            border-radius: 10px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+    </style>
+    <!-- <script src="./assets/phaser.min.js"></script> -->
+    <script>
+        if (location.origin.indexOf('pingan.com.cn') < 0) {
+            document.write('<script type="text/javascript" src="./assets/phaser.min.js"><\/script>')
+        }
+    </script>
+
+    <script src="./assets/pako.min.js"></script>
+</head>
+
+<body>
+    <div class="control_panel">
+        <div class="button" id="hook_near">吊臂靠近</div>
+        <div class="button" id="hook_far">吊臂远离</div>
+        <div class="button" id="hook_up">吊臂提升</div>
+        <div class="button" id="hook_down">吊臂下降</div>
+        <div class="button" id="arm_clock">顺时针转</div>
+        <div class="button" id="arm_anticlock">逆时针转</div>
+    </div>
+</body>
+
+</html>
