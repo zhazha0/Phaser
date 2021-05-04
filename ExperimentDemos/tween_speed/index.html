@@ -1,0 +1,127 @@
+<!doctype html> 
+<html lang="en"> 
+<head> 
+    <meta charset="UTF-8" />
+    <title>Beat Planets</title>
+    <!-- <script src="js/pako.min.js"></script> -->
+    <script src="phaser.min.js"></script>
+    <!-- plugin for debug -->
+    <!-- <script src="phaser-plugin-debug-draw.umd.js"></script>  -->
+    <!-- <script>
+        var phaserUrl = 'https://test-b-fat.pingan.com.cn/mkt/youhui/1901/dtwxqx-ht/js/phaser.min.js.gz'
+
+        var xhr = new XMLHttpRequest();
+        xhr.responseType = 'arraybuffer'
+        xhr.onload = function () {
+            console.log('Data got.')
+            var data = new Uint8Array(xhr.response, 0)
+            var res = pako.inflate(data, {to: 'string'})
+            var phaserjs = document.createElement('script')
+            var head = document.head
+            phaserjs.type = 'text/javascript';
+            phaserjs.innerHTML = res
+            head.appendChild(phaserjs)
+
+            init()
+        }
+        xhr.open('get', phaserUrl, true);
+        xhr.send();
+    </script> -->
+    <style type="text/css">
+        * {
+            margin: 0;
+            padding: 0;
+            overflow: hidden;
+        }
+    </style>
+</head>
+<body>
+
+<script type="text/javascript">
+
+const WIDTH_SCENE = 750 // window.innerWidth
+const HEIGHT_SCENE = 1624 // window.innerHeight
+
+const ORIGINAL_STATUS = 0
+const CHANGED_STATUS = 1
+const END_STATUS = 2
+
+const PLANET_SIZE = 114
+const LARGE_SIZE = 1
+const MEDIUM_SIZE = 0.7
+const SMALL_SIZE = 0.3
+
+const FIREPOWER_AWARD = 5
+
+
+let cursors = null
+let bulletEmitter = null
+let planet = null
+let gameOver = false
+let game = null
+
+let firepower = 5
+
+// function init () {
+    var config = {
+        type: Phaser.AUTO,
+        scale: {
+            mode: Phaser.Scale.ENVELOP, // FIT
+            width: WIDTH_SCENE,
+            height: HEIGHT_SCENE,
+        },
+        physics: {
+            default: 'arcade',
+            arcade: {
+                gravity: { y: 300 },
+                debug: false
+            }
+        },
+        // plugins: {
+        //     scene: [{ key: 'DebugDrawPlugin', plugin: PhaserDebugDrawPlugin, mapping: 'debugDraw' }]
+        //   },
+        scene: {
+            preload: preload,
+            create: create,
+            update: update
+        }
+    };
+    game = new Phaser.Game(config)
+// }
+
+function preload () {
+
+    this.load.image('cannon', 'assets/cannon.png');
+ 
+
+}
+
+function create () {
+    this._cannon = this.physics.add.image(WIDTH_SCENE / 2, HEIGHT_SCENE / 2, 'cannon')
+    this._cannon.body.setVelocity(100, 200).setBounce(1, 1).setCollideWorldBounds(true);
+    var tween = this.tweens.add({
+        targets: this._cannon,
+        y: 1,
+    
+        ease: 'Linear',       // 'Cubic', 'Elastic', 'Bounce', 'Back'
+        duration: 1000,
+        repeat: 0,            // -1: infinity
+        yoyo: false
+    });
+
+    this.input.on("pointerdown", pointer => {
+      console.log('clicked')
+        tween.play();
+    });
+  
+}
+
+function update () {
+
+   
+}
+
+</script>
+<script src="https://bank-static-stg.pingan.com.cn/app_js/common/vconsole/1.0.0/vconsole.js"></script>
+</body>
+</html>
