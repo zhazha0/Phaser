@@ -1,6 +1,6 @@
 // import Phaser from 'phaser'
 import cons from '../constants'
-import Score from '../components/score';
+import Counter from '../components/publicComponents/counter';
 import Enemy from '../components/enemy';
 // import Ball from '../objects/ball'
 // class MainScene extends Phaser.Scene {
@@ -29,6 +29,8 @@ class MainScene {
         this.load.spritesheet("player", "./assets/players.png", { frameWidth: 36, frameHeight: 64 })
         // focus
         this.load.spritesheet("button", "./assets/buttons.png", { frameWidth: 80, frameHeight: 40 })
+        // icons
+        this.load.spritesheet("icon", "./assets/icons.png", { frameWidth: 20, frameHeight: 20 })
 
         this.cameras.main.backgroundColor.setTo(232, 135, 30)
 
@@ -49,6 +51,7 @@ class MainScene {
 
         // background
         let background = this.add.image(0, 0, 'background').setOrigin(0)
+        background.setScrollFactor(0)
         console.log('size:', this.sys.game.canvas.width, this.sys.game.canvas.height)
         console.log('size Center', this.cameras.main.centerX, this.cameras.main.centerY)
         // key: canvas size is different with 'style' set on canvas
@@ -71,34 +74,66 @@ class MainScene {
             // }, this, 0, 20000 - 3000 * i);
         }
 
+        // create plate
         this.curPlate = this.add.sprite(this.cameras.main.centerX, this.cameras.main.centerY, "plate", 0); // 0 - 7
         this._hwRatio = this.curPlate.displayHeight / this.curPlate.displayWidth // 40 / 64
         this.curPlate.setOrigin(0.5, this._hwRatio)
 
+        // create next plate
         this.geneNewPillar()
-
 
         this.geneNewPlayer()
 
         this.focus = this.add.sprite(0, 0, "button", 7)
         this.focus.setScale(0.5)
-        this.focus.setOrigin(0.6)
         this.focus.setVisible(false)
+
+        // 光效
+        this.effect = this.add.sprite(0, 0, "button", 6)
+        this.effect.setVisible(false)
+
+        // create blood:
+        this.bloodText = new Counter(this, { 
+            type: 'icon' , 
+            texture: 'icon', 
+            frame: 0, 
+            posX: 16,
+            posY: 16
+        })
+        this.bloodText.update(this.blood)
+
+        // create focus:
+        this.focusText = new Counter(this, {
+            type: 'icon',
+            texture: 'icon',
+            frame: 1,
+            posX: 86,
+            posY: 16
+        })
+        this.focusText.update(100)
 
         this.downTime = 0
         this.input.on('pointerdown', function (pointer) {
-            this.downTime = Date.now()
-            // if (this.focusOn) {
+            if (this.canPress) {
+                this.downTime = Date.now()
+                // if (this.focusOn) {
 
-            // }
-            this.focus.setVisible(true)
-            this.focus.x = this.curPlate.x
-            this.focus.y = this.curPlate.y
+                // }
+                this.focus.setVisible(true)
+                this.focus.x = this.curPlate.x
+                this.focus.y = this.curPlate.y - 6
+            }
+            
         }, this)
         this.input.on('pointerup', function (pointer) {
-            this.player.setScale(1, 1)
-            this.focus.setVisible(false)
-            this.jump()
+            if (this.canPress) {
+                this.player.setScale(1, 1)
+                this.focus.setVisible(false)
+                this.focusText.update(this.focusText.value - 1)
+                this.canPress = false
+                this.jump()
+            }
+            
             
         }, this)
 
@@ -110,14 +145,14 @@ class MainScene {
         if (this.gameOver) return;
         
         var pointer = this.input.activePointer
-        if (pointer.isDown) {
+        if (pointer.isDown && this.canPress) {
             let downDuration = Date.now() - this.downTime
             this.scale = Math.min(2000, downDuration * 2) / 3000 // (0 - 2000) / 3000
             console.log(this.downTime, downDuration, 1 - this.scale)
 
             this.player.setScale(1, 1 - this.scale)
             this.focus.x = this.curPlate.x + this.curDirect * (this.scale * 3000 / 10)
-            this.focus.y = this.curPlate.y - this._hwRatio * (this.scale * 3000 / 10)
+            this.focus.y = this.curPlate.y - 7 - this._hwRatio * (this.scale * 3000 / 10)
         }
     }
 
@@ -129,6 +164,10 @@ class MainScene {
         let newY = this.curPlate.y - distance * this._hwRatio
         this.nextPlate =  this.add.sprite(newX, newY, "plate", Phaser.Math.Between(0, 1))
         this.nextPlate.setOrigin(0.5, this._hwRatio)
+        this.player && (this.player._contMove.depth = this.nextPlate.depth + 1)
+        this.focus && (this.focus.depth = this.nextPlate.depth + 1)
+
+        this.canPress = true
 
     }
 
@@ -153,8 +192,50 @@ class MainScene {
                     this.player._contMove.y > this.nextPlate.y - 10 &&
                     this.player._contMove.y < this.nextPlate.y + 10) {
                         console.log('scored')
+
+                    if (this.player._contMove.x < this.nextPlate.x + 3 &&
+                        this.player._contMove.x > this.nextPlate.x - 3 &&
+                        this.player._contMove.y > this.nextPlate.y - 3 &&
+                        this.player._contMove.y < this.nextPlate.y + 3) {
+                            this.effect.x = this.nextPlate.x
+                            this.effect.y = this.nextPlate.y
+                            this.effect.setVisible(true)
+                            this.tweens.add({
+                                targets: this.effect,
+                                scale: 3,
+                                alpha: 0,
+                                ease: 'Power0',
+                                duration: 250,
+                                completeDelay: 10,
+                                onComplete: () => {
+                                    this.effect.alpha = 1
+                                    this.effect.scale = 1
+                                    this.effect.setVisible(false)
+                                }
+                            })
+                        }
+
+                        // move camera
+                        // this.cameras.main.scrollX = this.nextPlate.x - this.curPlate.x
+                        // this.cameras.main.scrollY = this.nextPlate.y - this.curPlate.y // move too fast
+                        this.tweens.add({
+                            targets: this.cameras.main,
+                            scrollX: this.nextPlate.x - this.cameras.main.centerX, // dont use this.nextPlate.x - this.curPlate.x, camera.scrollX is relative to original point
+                            scrollY: this.nextPlate.y - this.cameras.main.centerY,
+                            ease: 'Power0',       // 'Cubic', 'Elastic', 'Bounce', 'Back'
+                            duration: 250,
+                            completeDelay: 10,
+                            onComplete: () => {
+                                this.curPlate = this.nextPlate
+                                this.geneNewPillar()
+                            }
+                        })
+
+                        
+
                     } else {
                         console.log('falled')
+                        
                         if (this.player._contMove.x < this.nextPlate.x + 20 &&
                             this.player._contMove.x > this.nextPlate.x - 20 &&
                             this.player._contMove.y > this.nextPlate.y - 20 &&
@@ -200,6 +281,7 @@ class MainScene {
             },
         })
 
+        // jump animation
         var timeline = this.tweens.timeline({
             loop: 0,
             targets: this.player._contJump,
@@ -224,21 +306,20 @@ class MainScene {
             }]
 
         })
-
-        // this.cameras.main.scrollX = this.player.cont.x
-        // this.cameras.main.scrollY = this.player.cont.y
-
     }
 
     geneNewPlayer (time = 10) {
         this.time.delayedCall(time, function () {
             if (this.blood > 0) {
                 this.blood --
+                this.bloodText.update(this.blood)
                 // multiple layer of animations use container to apply simultaneously
                 this.player = this.add.sprite(0, 0, 'player', 0).setOrigin(0.5, 1) // used to scale from bottom
                 this.player._contJump = this.add.container(0,  - (this.player.displayHeight / 2), [this.player])
                 this.player.y = this.player.displayHeight / 2 // key: used to rotate player form the middle, shift player middle to the middle of container
                 this.player._contMove = this.add.container(this.curPlate.x, this.curPlate.y, [ this.player._contJump ])
+
+                this.canPress = true
     
             }
         }, null, this)

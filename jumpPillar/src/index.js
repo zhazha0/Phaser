@@ -2,6 +2,8 @@
 // import 'phaser'
 import mainScene from './scenes/mainScene'
 import cons from './constants'
+// import PhaserDebugDrawPlugin from "./plugins/phaser-plugin-debug-draw.umd.js"
+
 
 const initGame = () => {
     const config = {
@@ -18,6 +20,9 @@ const initGame = () => {
                 debug: true
             }
         },
+        // plugins: {
+        //     scene: [{ key: 'DebugDrawPlugin', plugin: PhaserDebugDrawPlugin, mapping: 'debugDraw' }]
+        // },
         scene: [
             mainScene
         ]
