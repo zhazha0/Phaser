@@ -10,7 +10,7 @@ class MainScene {
 
         // this.game = null
         this.gameOver = false
-        this.score = null
+        this.score = 0
         this.blood = 100
 
     }
@@ -112,6 +112,11 @@ class MainScene {
         })
         this.focusText.update(100)
 
+        // create score
+        this.scoreText = this.add.text(
+            this.cameras.main.centerX, 80, '0', 
+            { fontSize: "48px", fill: "#999" }).setScrollFactor(0)
+
         this.downTime = 0
         this.input.on('pointerdown', function (pointer) {
             if (this.canPress) {
@@ -192,6 +197,8 @@ class MainScene {
                     this.player._contMove.y > this.nextPlate.y - 10 &&
                     this.player._contMove.y < this.nextPlate.y + 10) {
                         console.log('scored')
+
+                    this.scoreText.setText(++this.score)
 
                     if (this.player._contMove.x < this.nextPlate.x + 3 &&
                         this.player._contMove.x > this.nextPlate.x - 3 &&

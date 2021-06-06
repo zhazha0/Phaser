@@ -25,13 +25,15 @@ class MainScene {
         this.gameOver = false
         this._background = null
         this._bird = null
+        this._score = null
+
     }
 
     preload () {
         this.load.image('background', 'assets/background.png');
         this.load.image('pipe', 'assets/pipe.png');
 
-        this.load.spritesheet('bird',
+        this.load.spritesheet('bird', 
             'assets/bird.png',
             { frameWidth: 92, frameHeight: 64 }
         )
@@ -49,7 +51,7 @@ class MainScene {
 
         // background.scaleX = cons.WIDTH_SCENE / cons.WIDTH_BACKIMG
         // background.scaleY = cons.HEIGHT_SCENE / cons.HEIGHT_BACKIMG
-
+   
         this._bird = this.physics.add.sprite(150, 450, 'bird').setScale(0.6)
         this.anims.create({
             key: 'fly',
@@ -63,6 +65,8 @@ class MainScene {
         this.cameras.main.setBounds(0, 0, cons.WIDTH_SCENE * 2 , cons.HEIGHT_SCENE);
         // this.cameras.main.startFollow(this._bird)
         // this.cameras.main.setLerp(0,0);
+
+        this._score = new Score(this)
 
         // create pipes
         this._pipes = this.physics.add.staticGroup();
@@ -80,9 +84,9 @@ class MainScene {
             this._bird.body.velocity.y = -200;
 
             // this._bird.applyForce(0, 22);
-            // this.time.delayedCall(1*1000,
+            // this.time.delayedCall(1*1000, 
             //           () => this._bird.body.setAcceleration(0,0));
-
+           
         }, this);
 
 
@@ -105,7 +109,7 @@ class MainScene {
         // this.cameras.main.x = -this._bird.x + 150
         this.cameras.main.scrollX = this._bird.x - 150
         this._bird.body.velocity.x = 160
-        this._background.tilePositionX = this.cameras.main.scrollX;
+        // this._background.tilePositionX = this.cameras.main.scrollX;
         // this._background.tilePositionX += 15
 
         // console.log(this._bird.x, this._bird.displayWidth, this._bird.body.x,
@@ -120,13 +124,19 @@ class MainScene {
             this.addPipes(this._pipes, this._bird.x + 700)
         }
 
-
+        
         // expand world and camera view when reach end
-        console.log(this.cameras.main.scrollX + 150, this.physics.world.bounds.width - 200)
+        // console.log(this.cameras.main.scrollX + 150, this.physics.world.bounds.width - 200)
         if (this.cameras.main.scrollX + 150 >= this.physics.world.bounds.width - cons.WIDTH_SCENE) {
-            console.log('reach end')
+            // console.log('reach end')
             this.physics.world.setBounds(0, 0, this.physics.world.bounds.width + cons.WIDTH_SCENE * 2, cons.HEIGHT_SCENE, true, true, true, true)
             this.cameras.main.setBounds(0, 0, this.physics.world.bounds.width + cons.WIDTH_SCENE * 2, cons.HEIGHT_SCENE);
+        }
+
+        // calculate score
+        if (this._bird.x > this._pipes.children.entries[this._score.value * 2].x) {
+            this._score.update(1)
+            console.log(this._score.value)
         }
 
     }
@@ -134,11 +144,11 @@ class MainScene {
     hitPipes () {
         let caller = this;
         this.gameOver = true
-
-        this.add.text(this.cameras.main.centerX + this.cameras.main.scrollX - 150, this.cameras.main.centerY,
+        
+        this.add.text(this.cameras.main.centerX + this.cameras.main.scrollX - 150, this.cameras.main.centerY, 
             'Game Over',
             { fontSize: '48px', fill: '#fff' }).setOrigin(0.5)
-        this.add.text(this.cameras.main.centerX + this.cameras.main.scrollX - 150, this.cameras.main.centerY + 100,
+        this.add.text(this.cameras.main.centerX + this.cameras.main.scrollX - 150, this.cameras.main.centerY + 100, 
             '点击任意处重新开始',
             { fontSize: '48px', fill: '#fff' }).setOrigin(0.5)
 
@@ -154,9 +164,11 @@ class MainScene {
             }
             // this.scene.restart() // restart current scene
             // this.gameOver = false
+
+    
         }, this);
         this._bird.body.velocity.x = 0
-        this._bird.anims.stop();
+        this._bird.anims.stop()
         console.log('game over')
     }
 
