@@ -134,34 +134,8 @@ class MainScene {
 
 export default MainScene
 
-// `Phaser.Geom.Line` as opposed to the `Phaser.GameObjects.Line`
-
-// this.add.line(
-//     0,
-//     0,
-//     sprite1.x,
-//     sprite1.y,
-//     sprite2.x,
-//     sprite2.y,
-//     0xff0000
-// )
-
-// // creating my line
-// const line = new Phaser.Geom.Line(
-//     sprite1.x,
-//     sprite1.y,
-//     sprite2.x,
-//     sprite2.y
-// );
-
-// // in Scene.update()
-// this.graphics.strokeLineShape(line)
-
 // too fast movement make matterjs collider not working
 // It is tunneling.Physics engines have ccd(continues collision detection) to detect such collisions but matterjs doesn't have . You can try increasing position and velocity iterations but they probably won't be enough for too fast objects.
 
 //     this.matter.world.engine.positionIterations = 20;
 // this.matter.world.engine.velocityIterations = 20;
-
-//  var blockA = this.matter.add.image(200, 300, 'block').setBounce(1).setFriction(0);
-// blockA.setVelocityX(25);
