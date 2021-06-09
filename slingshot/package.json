@@ -1,0 +1,26 @@
+{
+  "name": "webpackpro",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "serve": "webpack serve",
+    "build": "webpack"
+  },
+  "author": "",
+  "license": "ISC",
+  "devDependencies": {
+    "clean-webpack-plugin": "^3.0.0",
+    "copy-webpack-plugin": "^6.3.2",
+    "html-webpack-plugin": "^4.5.1",
+    "javascript-obfuscator": "^2.14.0",
+    "webpack": "^4.44.2",
+    "webpack-cli": "^4.4.0",
+    "webpack-dev-server": "^3.11.2",
+    "webpack-obfuscator": "^2.6.0"
+  },
+  "dependencies": {
+    "phaser": "^3.52.0"
+  }
+}
