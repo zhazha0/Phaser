@@ -1,7 +1,6 @@
 // import Phaser from 'phaser'
 import cons from '../constants'
 import Counter from '../components/publicComponents/counter';
-import Enemy from '../components/enemy';
 // import Ball from '../objects/ball'
 // class MainScene extends Phaser.Scene {
 class MainScene {
@@ -11,107 +10,108 @@ class MainScene {
         // this.game = null
         this.gameOver = false
         this.score = null
-        this.blood = 100
 
     }
 
     preload () {
-        // explosion demo
-        // this.load.spritesheet('explosion', 'assets/explosion.png', { frameWidth: 64, frameHeight: 64, endFrame: 23 })
-        // thunderbolt demo
-        this.load.spritesheet('thunderbolt', 'assets/thunderbolt.jpg', { frameWidth: 626 / 5, frameHeight: 417 / 2 })
 
-        // background
-        this.load.image('background', 'assets/back.png')
-        // clouds
-        this.load.spritesheet('cloud', 'assets/clouds.png', { frameWidth: 64, frameHeight: 32 })
-        // pillars
-        this.load.spritesheet("plate", "./assets/plates.png", { frameWidth: 64, frameHeight: 40 })
-        // player
-        this.load.spritesheet("player", "./assets/players.png", { frameWidth: 36, frameHeight: 64 })
-        // focus
-        this.load.spritesheet("button", "./assets/buttons.png", { frameWidth: 80, frameHeight: 40 })
-        // icons
-        this.load.spritesheet("icon", "./assets/icons.png", { frameWidth: 20, frameHeight: 20 })
-
-        // this.cameras.main.backgroundColor.setTo(232, 135, 30)
+        // sling
+        this.load.image("sling1", "./assets/sling1.png")
+        this.load.image("sling2", "./assets/sling2.png")
+        this.load.image("sling3", "./assets/sling3.png")
+        // stone
+        this.load.image("stone", "./assets/boulder.png")
+        this.cameras.main.backgroundColor.setTo(232, 135, 30)
 
     }
 
     create () {
-        // thunderbolt demo
-        // var config = {
-        //     key: 'thunderbolt',
-        //     frames: this.anims.generateFrameNumbers('thunderbolt', { start: 0, end: 10 }),
-        //     frameRate: 10,
-        //     repeat: -1
-        // };
+        let startPos = { x: 200, y: 600 }
+        this.sling1 = this.add.image(startPos.x, startPos.y, 'sling1')
+        this.sling1.depth = 0
+        let sling2 = this.add.image(this.sling1.x - 25, this.sling1.y - 40, 'sling2')
+        sling2.depth = 3
 
-        // this.anims.create(config);
+        this.stone = this.matter.add.image(this.sling1.x - 10, this.sling1.y - 60, 'stone')
+        this.stone.depth = 2
+        this.stone.setCircle()
 
-        // this.add.sprite(200, 300, 'thunderboltsprite').play('thunderbolt').setDepth(3);
-
+        this.stone.setMass(80)
+        this.stone.setIgnoreGravity(true) 
 
         this.matter.world.setBounds(0, 0, this.sys.scale.width, this.sys.scale.height)
         // check this with other method
         // this.matter.world.setBounds(0, 0, game.config.width, game.config.height);
 
-        this.bullet = this.matter.add.sprite(100, 600, 'icon', 0)
-        this.bullet.setMass(80)
-        this.bullet.setIgnoreGravity(true) 
-        // this.bullet.depth = 1
-
-        this.fixpoint = this.add.sprite(100, 600, 'icon', 1)
+        this.sling1._fixpoint = { x: this.sling1.x + 5, y: this.sling1.y - 70 }
+        sling2._fixpoint = { x: sling2.x, y: sling2.y - 40 }
 
         // this.matter.add.spring(this.bullet, this.fixpoint, 140, 0.001)
 
         this.graphics = this.add.graphics();
-        this.graphics.lineStyle(4, 0x00ff00, 1);
+        this.graphics.lineStyle(4, 0x000000, 1);
 
-        this.generatePyramid({ x: 300, y: 700 })
+        this.generatePyramid({ x: this.sys.scale.width - 100, y: this.sys.scale.height - 200 })
 
         this.isReady = true
 
+        this.setStoneDragAction()
+    }
+
+    update () {
+
+    }
+
+    setStoneDragAction () {
         let self = this
-        this.bullet
+        this.stone
             .setInteractive({ draggable: true })
             .on('dragstart', function (pointer, dragX, dragY) {
                 console.log('dragstart')
             })
             .on('drag', function (pointer, dragX, dragY) {
-                self.bullet.setPosition(dragX, dragY);
+                self.stone.setPosition(dragX, dragY);
                 console.log('drag')
-                self.line = new Phaser.Geom.Line(
-                    self.fixpoint.x,
-                    self.fixpoint.y,
-                    self.bullet.x,
-                    self.bullet.y
+
+                // draw geometry line
+                self.line1 = new Phaser.Geom.Line(
+                    self.sling1._fixpoint.x,
+                    self.sling1._fixpoint.y,
+                    self.stone.x,
+                    self.stone.y
                 );
+                // self.line2 = new Phaser.Geom.Line(
+                //     sling2._fixpoint.x,
+                //     sling2._fixpoint.y,
+                //     self.stone.x,
+                //     self.stone.y
+                // );
                 self.graphics.clear()
-                self.graphics.strokeLineShape(self.line)
+                self.graphics.strokeLineShape(self.line1)
+                // self.graphics.strokeLineShape(self.line2)
+
+
             })
             .on('dragend', function (pointer, dragX, dragY, dropped) {
-                // ...
                 console.log('dragend')
                 self.graphics.clear()
-                self.bullet.setIgnoreGravity(false) 
-                self.bullet
-                    .setVelocityX((self.fixpoint.x - self.bullet.x) / 5)
-                    .setVelocityY((self.fixpoint.y - self.bullet.y) / 5)
+                self.stone.setIgnoreGravity(false) 
+                self.stone.disableInteractive()
+                self.stone
+                    .setVelocityX((self.sling1._fixpoint.x - self.stone.x) / 5)
+                    .setVelocityY((self.sling1._fixpoint.y - self.stone.y) / 5)
                 self.time.delayedCall(2 * 1000,
                     () => {
-                        self.bullet = self.matter.add.sprite(100, 600, 'icon', 0)
-                        self.bullet.setMass(80)
-                        self.bullet.setIgnoreGravity(true)
+                        self.stone.destroy()
+                        self.stone = self.matter.add.image(self.sling1.x - 10, self.sling1.y - 60, 'stone')
+                        self.stone.setMass(80)
+                        self.stone.setIgnoreGravity(true)
+                        self.setStoneDragAction()
                         console.log('set new')
                         self.isReady = true
                     })
                 
             })
-    }
-
-    update () {
-        
     }
 
     generatePyramid(pos) {
